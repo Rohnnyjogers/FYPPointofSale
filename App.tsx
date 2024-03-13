@@ -1,17 +1,56 @@
-import { Button, Dimensions, ScrollView, StyleSheet, Text, View } from 'react-native';
-import React, { useState } from 'react';
+import { Button, Dimensions, ScrollView, StyleSheet, Text, View, PermissionsAndroid, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
 import NfcManager, { Ndef, NfcTech, } from 'react-native-nfc-manager';
 import { Item, foodList, drinkList } from './src/data/Products';
+import { Location } from './src/types/types';
+import Geolocation from '@react-native-community/geolocation';
+import { PERMISSIONS, request } from 'react-native-permissions';
+
 const App = () => {
 
   const [foodItems, setFoodItems] = useState<Item[]>(foodList);
   const [drinkItems, setDrinkItems] = useState<Item[]>(drinkList);
   const [productList, setProductList] = useState<Item[]>([...foodList, ...drinkList]);
   const [receipt, setReceipt] = useState<Item[]>([]);
+  const [location, setLocation] = useState({latitude: 0, longitude: 0});
+
+  useEffect(() => {
+    requestLocation();
+    console.log(location);
+  },[]);
+
+  const requestLocation = async() => {
+    try{
+      const granted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
+
+      if(granted === 'granted'){
+        Geolocation.getCurrentPosition(
+          (position: { coords: { latitude: any; longitude: any; }; }) => {
+            const {latitude, longitude} = position.coords;
+            setLocation({latitude, longitude});
+          },
+          (error: any) => {
+            console.error(error.message);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 25000,
+            maximumAge: 10000
+          }
+        )
+      }
+      else {
+        console.error("Denied permission to access location.");
+      }
+    }
+    catch(error){
+      console.error(error);
+    }
+  }
 
   const addProductToReceipt = (product: string) => {
     const itemSelected = productList.find((item) => item.description === product)
-
+    console.log(location);
     if(itemSelected){
       
       const existingItem = receipt.find((item) => item.description === product);
@@ -33,7 +72,7 @@ const App = () => {
       }
     }
   }
-
+  
   const receiptSubTotal = () => {
     const subTotal = receipt.reduce((acc, itm) => {
       const itemSubTotal = itm.quantity * itm.price;
@@ -61,10 +100,12 @@ const App = () => {
     const vendorName: string = 'The Corner Shop';
     const vendorId: string = 'V123654';
     const receiptId: string = '1122235';
-    //location
+    const latitude: number = location.latitude;
+    const longitude: number = location.longitude;
     const items: Item[] = receipt;
     const priceTotal: number = receiptSubTotal();
     const itemsTotal: number = receiptItemsTotal();
+
 
     const receiptData = {
       vendorName,
@@ -72,7 +113,9 @@ const App = () => {
       receiptId,
       items,
       priceTotal,
-      itemsTotal
+      itemsTotal,
+      longitude,
+      latitude
     }
 
     const jsonStringReceipt = JSON.stringify(receiptData);
@@ -98,6 +141,8 @@ const App = () => {
     finally{
       NfcManager.cancelTechnologyRequest();
     }
+    Alert.alert('Transaction successful.');
+    clearTransaction();
   }
 
   return (
@@ -113,7 +158,7 @@ const App = () => {
                 <Button
                   title={product.description}
                   onPress={() => 
-                  addProductToReceipt(product.description)}
+                    addProductToReceipt(product.description)}
                 />
               </View>
             )}
