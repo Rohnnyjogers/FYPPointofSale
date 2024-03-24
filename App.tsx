@@ -1,150 +1,23 @@
 import { Button, Dimensions, ScrollView, StyleSheet, Text, View, PermissionsAndroid, Alert } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import NfcManager, { Ndef, NfcTech, } from 'react-native-nfc-manager';
-import { Item, foodList, drinkList } from './src/data/Products';
+import { Item, foodList, drinkList } from './src/data/products';
 import { Location } from './src/types/types';
-import Geolocation from '@react-native-community/geolocation';
-import { PERMISSIONS, request } from 'react-native-permissions';
+import { addProductToReceipt, receiptSubTotal, requestLocation, writeNfc, } from './src/functions/receiptFunctions';
+
 
 const App = () => {
-
   const [foodItems, setFoodItems] = useState<Item[]>(foodList);
   const [drinkItems, setDrinkItems] = useState<Item[]>(drinkList);
   const [productList, setProductList] = useState<Item[]>([...foodList, ...drinkList]);
   const [receipt, setReceipt] = useState<Item[]>([]);
-  const [location, setLocation] = useState({latitude: 0, longitude: 0});
+  const [location, setLocation] = useState<Location>({latitude: 0, longitude: 0});
 
   useEffect(() => {
-    requestLocation();
+    // checkCustomersForRewards();
+    requestLocation(setLocation);
     console.log(location);
   },[]);
-
-  const requestLocation = async() => {
-    try{
-      const granted = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-
-      if(granted === 'granted'){
-        Geolocation.getCurrentPosition(
-          (position: { coords: { latitude: any; longitude: any; }; }) => {
-            const {latitude, longitude} = position.coords;
-            setLocation({latitude, longitude});
-          },
-          (error: any) => {
-            console.error(error.message);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 25000,
-            maximumAge: 10000
-          }
-        )
-      }
-      else {
-        console.error("Denied permission to access location.");
-      }
-    }
-    catch(error){
-      console.error(error);
-    }
-  }
-
-  const addProductToReceipt = (product: string) => {
-    const itemSelected = productList.find((item) => item.description === product)
-    console.log(location);
-    if(itemSelected){
-      
-      const existingItem = receipt.find((item) => item.description === product);
-      
-      if(existingItem){
-        setReceipt((currentReceipt) =>
-          currentReceipt.map((item) => 
-            item.description === product ? 
-              {...item, quantity: item.quantity + 1} : item));
-      } else{
-        setReceipt((prev) => ([...prev, itemSelected]));
-      }
-    } else{
-
-      if(!itemSelected){
-        console.log('Item not found');
-      } else{
-        setReceipt((prev) => [...prev, {...(itemSelected as Item), quantity: 1}]);
-      }
-    }
-  }
   
-  const receiptSubTotal = () => {
-    const subTotal = receipt.reduce((acc, itm) => {
-      const itemSubTotal = itm.quantity * itm.price;
-      return acc + itemSubTotal;
-    }, 0);
-
-    return subTotal;
-  }
-
-  const receiptItemsTotal = () => {
-    const itemsTotal = receipt.reduce((acc, itm) => {
-      const quantity = itm.quantity;
-      return acc + quantity;
-    }, 0);
-
-    return itemsTotal;
-  }
-
-  const clearTransaction = () => {
-    setReceipt(prev => []);
-  }
-
-  const writeNfc = async() => {
-
-    const vendorName: string = 'The Corner Shop';
-    const vendorId: string = 'V123654';
-    const receiptId: string = '1122235';
-    const latitude: number = location.latitude;
-    const longitude: number = location.longitude;
-    const items: Item[] = receipt;
-    const priceTotal: number = receiptSubTotal();
-    const itemsTotal: number = receiptItemsTotal();
-
-
-    const receiptData = {
-      vendorName,
-      vendorId,
-      receiptId,
-      items,
-      priceTotal,
-      itemsTotal,
-      longitude,
-      latitude
-    }
-
-    const jsonStringReceipt = JSON.stringify(receiptData);
-    console.log(jsonStringReceipt);
-
-    try{
-      await NfcManager.requestTechnology(NfcTech.Ndef);
-      // const hasNdef = NfcManager.requestTechnology(NfcTech.Ndef);
-      // if(hasNdef != null){
-      // }
-      
-      const bytes = Ndef.encodeMessage([Ndef.textRecord(jsonStringReceipt)]);
-      console.log('Encoded bytes value:', bytes);
-      console.log('Decoded bytes value:', Ndef.decodeMessage(bytes));
-
-      if(bytes){
-        await NfcManager.ndefHandler.writeNdefMessage(bytes);
-      }
-    }
-    catch(error){
-      console.log('Nfc Manager error:', error);
-    }
-    finally{
-      NfcManager.cancelTechnologyRequest();
-    }
-    Alert.alert('Transaction successful.');
-    clearTransaction();
-  }
-
   return (
     <View style={styles.container}>
       <ScrollView
@@ -158,7 +31,13 @@ const App = () => {
                 <Button
                   title={product.description}
                   onPress={() => 
-                    addProductToReceipt(product.description)}
+                    addProductToReceipt(
+                      productList,
+                      product.description,
+                      receipt,
+                      setReceipt
+                    )
+                  } 
                 />
               </View>
             )}
@@ -171,7 +50,13 @@ const App = () => {
                 <Button
                   title={product.description}
                   onPress={() => 
-                  addProductToReceipt(product.description)}
+                    addProductToReceipt(
+                      productList,
+                      product.description,
+                      receipt,
+                      setReceipt
+                    )
+                  }
                 />
               </View>
             )}      
@@ -179,45 +64,50 @@ const App = () => {
         </View>
 
         <View style={styles.transactionContainer}>
-        <Text style={styles.title}>Transaction</Text>
-        <View style={styles.receiptContainer}>
-          <ScrollView>
-            <View style={styles.itemListContainer}>
-              {receipt.map((item) =>
-                  <View style={styles.receiptItems} key={item.description}>
-                    <Text>{item.quantity}</Text>
-                    <Text> x </Text>
-                    <Text>{item.description}</Text>
-                    <Text>€{item.price}</Text>
-                  </View>
-              )}
-            </View>
-            
-            <View style={styles.totalsContainer}>
-              <View style={styles.divider}/>
-              <View style={styles.subtotalContainer}>
-                <Text style={styles.subtotal}>Sub Total:</Text>
-                <Text style={styles.subtotalValue}>€{receiptSubTotal()}</Text>
+          <Text style={styles.title}>Transaction</Text>
+          <View style={styles.receiptContainer}>
+            <ScrollView>
+              <View style={styles.itemListContainer}>
+                {receipt.map((item) =>
+                    <View style={styles.receiptItems} key={item.description}>
+                      <Text>{item.quantity}</Text>
+                      <Text> x </Text>
+                      <Text>{item.description}</Text>
+                      <Text>€{item.price}</Text>
+                    </View>
+                  )
+                }
               </View>
-            </View>
-          </ScrollView>
+              
+              <View style={styles.totalsContainer}>
+                <View style={styles.divider}/>
+                <View style={styles.subtotalContainer}>
+                  <Text style={styles.subtotal}>Sub Total:</Text>
+                  <Text style={styles.subtotalValue}>€{receiptSubTotal(receipt)}</Text>
+                </View>
+              </View>
+            </ScrollView>
+          </View>
         </View>
-        </View>
-
         <View style={styles.buttonContainer}>
             <Button
               title='Apply Transaction'
-              onPress={writeNfc}
+              onPress={() => 
+                writeNfc(
+                  receipt,
+                  location,
+                  setReceipt
+                )
+              }
             />
-
             <Button
               title='Clear Transaction'
-              onPress={clearTransaction}
+              onPress={() => setReceipt([])}
             />
         </View>
       </ScrollView>
     </View>
-  )
+    )
 }
 
 export default App;
