@@ -4,7 +4,7 @@ import React, { SetStateAction, useContext } from "react";
 import NfcManager, { Ndef, NfcTech, } from 'react-native-nfc-manager';
 import Geolocation from '@react-native-community/geolocation';
 import { PERMISSIONS, request } from 'react-native-permissions';
-import { Location, ReceiptProps, VENDOR_ID, VENDOR_NAME } from "../types/types";
+import { Location, ReceiptProps, TAX_TYPE, VENDOR_ID, VENDOR_NAME, VENDOR_TYPE } from "../types/types";
 import { Alert } from "react-native";
 
 export const requestLocation = async(
@@ -115,15 +115,18 @@ export const writeNfc = async(
 ) => {
     const receiptId: number = await generateReceiptId()
     const vendorId: string = VENDOR_ID;
-    const receiptDate: Date = new Date();
+    const currentDate: Date = new Date();
+    const receiptDate: Date = new Date(currentDate.getFullYear(),currentDate.getMonth(),currentDate.getDate()-20,currentDate.getHours()-12,currentDate.getMinutes(),currentDate.getSeconds());
     const vendorName: string = VENDOR_NAME;
     const latitude: number = location.latitude;
     const longitude: number = location.longitude;
     const items: Item[] = receipt;
     const itemsTotal: number = receiptItemsTotal(receipt);
     const priceTotal: number = receiptSubTotal(receipt);
+    const taxType: string = TAX_TYPE;
+    const vendorType: string = VENDOR_TYPE;
 
-    const receiptData = {
+    const receiptData: ReceiptProps = {
       receiptId,
       vendorId,
       receiptDate,
@@ -132,8 +135,10 @@ export const writeNfc = async(
       longitude,
       items,
       priceTotal,
-      itemsTotal
-    } as ReceiptProps;
+      itemsTotal,
+      taxType,
+      vendorType
+    } 
 
     const jsonStringReceipt = JSON.stringify(receiptData);
     console.log(jsonStringReceipt);

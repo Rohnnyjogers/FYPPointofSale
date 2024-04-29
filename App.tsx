@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Item, foodList, drinkList } from './src/data/products';
 import { Location } from './src/types/types';
 import { addProductToReceipt, receiptSubTotal, requestLocation, writeNfc, } from './src/functions/receiptFunctions';
+import { generateAndManageRewards } from './src/functions/databaseFunctions';
 
 
 const App = () => {
@@ -13,7 +14,7 @@ const App = () => {
   const [location, setLocation] = useState<Location>({latitude: 0, longitude: 0});
 
   useEffect(() => {
-    // checkCustomersForRewards();
+    // generateAndManageRewards(2,4,3);
     requestLocation(setLocation);
     console.log(location);
   },[]);

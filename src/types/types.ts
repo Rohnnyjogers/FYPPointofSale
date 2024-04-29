@@ -1,6 +1,7 @@
 export const VENDOR_NAME = 'The_Corner_Shop';
 export const VENDOR_ID = 'TCS001';
-export const RECEIPT_ID = '1122278'
+export const TAX_TYPE = 'VAT';
+export const VENDOR_TYPE ='Groceries';
 
 export type Location = {
     latitude: number;
@@ -23,4 +24,28 @@ export type ReceiptProps = {
     items: Item[];
     itemsTotal: number;
     priceTotal: number;
-} & ({viewerType?: never} | {viewerType: string});
+    taxType: string;
+    vendorType: string;
+}
+
+export type Reward = {
+    active: boolean;
+    rewardId: number;
+    vendor: string;
+    vendorId: string;
+    item: string;
+    size: number;
+    progress: number;
+    claimed: boolean;
+    complete: boolean;
+}
+
+export type PurchaseProps = {
+    quantity: number;
+    rewardable: boolean;
+    activeReward: boolean;
+    rewardCount: number | null;
+    nextRewardPhase: boolean;
+    nextRewardCount: number;
+    totalCompleteRewards: number;
+}
