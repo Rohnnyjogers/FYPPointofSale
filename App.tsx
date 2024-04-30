@@ -23,9 +23,9 @@ const App = () => {
   },[]);
   
   
-  generateAndManageRewards(2,4,3);
-  setInterval(() => {generateAndManageRewards(2,4,3);
-  }, 5000);
+  // generateAndManageRewards(2,4,3);
+  // setInterval(() => {generateAndManageRewards(2,4,3);
+  // }, 5000);
 
   // const requestCameraPermission = async () => {
   //   if (Platform.OS === 'android') {

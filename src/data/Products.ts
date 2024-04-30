@@ -7,8 +7,8 @@ export interface Item {
 
 export const drinkList: Item[] = [
     {
-        description: 'Headphones',
-        price: 100,
+        description: 'Water',
+        price: 1.2,
         quantity: 1
     },
     {
