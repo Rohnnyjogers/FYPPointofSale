@@ -1,10 +1,12 @@
-import { Button, Dimensions, ScrollView, StyleSheet, Text, View, PermissionsAndroid, Alert } from 'react-native';
+import { Button, Dimensions, ScrollView, StyleSheet, Text, View, PermissionsAndroid, Alert, Platform } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { Item, foodList, drinkList } from './src/data/products';
 import { Location } from './src/types/types';
 import { addProductToReceipt, receiptSubTotal, requestLocation, writeNfc, } from './src/functions/receiptFunctions';
 import { generateAndManageRewards } from './src/functions/databaseFunctions';
-
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import { RNCamera } from 'react-native-camera';
+import { request, PERMISSIONS } from 'react-native-permissions';
 
 const App = () => {
   const [foodItems, setFoodItems] = useState<Item[]>(foodList);
@@ -12,13 +14,49 @@ const App = () => {
   const [productList, setProductList] = useState<Item[]>([...foodList, ...drinkList]);
   const [receipt, setReceipt] = useState<Item[]>([]);
   const [location, setLocation] = useState<Location>({latitude: 0, longitude: 0});
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
-    // generateAndManageRewards(2,4,3);
-    requestLocation(setLocation);
+    // requestLocation(setLocation);
+    // requestCameraPermission();
     console.log(location);
   },[]);
   
+  
+  generateAndManageRewards(2,4,3);
+  setInterval(() => {generateAndManageRewards(2,4,3);
+  }, 5000);
+
+  // const requestCameraPermission = async () => {
+  //   if (Platform.OS === 'android') {
+  //     try {
+  //       const granted = await PermissionsAndroid.request(
+  //         PermissionsAndroid.PERMISSIONS.CAMERA,
+  //         {
+  //           title: 'Camera Permission',
+  //           message: 'This app needs access to your camera to scan QR codes.',
+  //           buttonNeutral: 'Ask Me Later',
+  //           buttonNegative: 'Cancel',
+  //           buttonPositive: 'OK',
+  //         },
+  //       );
+  //       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+  //         setHasPermission(true);
+  //       } else {
+  //         console.log('Camera permission denied');
+  //       }
+  //     } catch (err) {
+  //       console.warn(err);
+  //     }
+  //   } else {
+  //     setHasPermission(true);
+  //   }
+  // };
+
+  const onSuccess = (e: any) => {
+    console.log('Yo!')
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView

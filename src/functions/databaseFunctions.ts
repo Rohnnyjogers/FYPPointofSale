@@ -9,6 +9,7 @@ export const generateAndManageRewards = async(
   rewardSize: number,
   nextRewardSize: number,
 ) => {
+    console.log('Hello')
     const dbRef = ref(database, `/vendors/${VENDOR_NAME}/${VENDOR_NAME}_${VENDOR_ID}/customers`);
     try{
       const customersSnapshot = await get(dbRef);
@@ -34,7 +35,6 @@ export const generateAndManageRewards = async(
                   continue;
                 }
                 else if(itemData.nextRewardCount === itemData.rewardCount){
-                  console.log('Yo bud');
                   
                   const rewardId = await generateRewardId();
                   rewardData = {
@@ -55,7 +55,6 @@ export const generateAndManageRewards = async(
                   set(customerRewardRef, rewardData);
                 }
                 else if(itemData.rewardCount===undefined && itemData.quantity>=initialRewardSize){
-                    console.log('Yo yo bud');
                     
                     const rewardId = await generateRewardId();
                     rewardData = {
